@@ -13,7 +13,7 @@ typealias MyPathApplier = @convention(block) (UnsafePointer<CGPathElement>) -> V
 // if you don't, you get "fatal error: can't unsafeBitCast between
 // types of different sizes" at runtime, on Mac OS X at least.
 
-private func myPathApply(_ path: CGPath!, block: MyPathApplier) {
+private func myPathApply(_ path: CGPath!, block: @escaping MyPathApplier) {
   let callback: @convention(c) (UnsafeMutableRawPointer, UnsafePointer<CGPathElement>) -> Void = { (info, element) in
     let block = unsafeBitCast(info, to: MyPathApplier.self)
     block(element)
@@ -32,7 +32,7 @@ public enum PathElement {
 
 public extension CGPath {
 
-  func apply(_ fn: (PathElement) -> Void) {
+  func apply(_ fn: @escaping (PathElement) -> Void) {
     myPathApply(self) { element in
       let points = element.pointee.points
       switch (element.pointee.type) {
@@ -51,7 +51,9 @@ public extension CGPath {
 
       case .closeSubpath:
         fn(.close)
-      }
+      @unknown default:
+        fatalError("unhandled case of PathElement")
+        }
     }
   }
 }
